@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>棋类合集 · 五子棋 + 围棋（智能 AI）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+  body {
+    background: #1a1a2e;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #fff;
+    overflow: hidden;
+    touch-action: none;
+  }
+  #game-container {
+    position: relative;
+    width: 100%;
+    max-width: 680px;
+    height: 100vh;
+    max-height: 760px;
+    background: #0d0d1a;
+    border: 2px solid #2a2a4a;
+    border-radius: 12px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(100, 150, 255, 0.1), 0 0 120px rgba(255, 200, 100, 0.05);
+  }
+  #top-bar {
+    display: flex; justify-content: center; gap: 8px;
+    padding: 10px 18px;
+    background: #0a0a18;
+    border-bottom: 1px solid #2a2a4a;
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 8px 28px;
+    border-radius: 6px;
+    font-size: 14px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    color: #667799;
+    border: 1px solid #2a2a4a;
+    transition: all 0.2s;
+    background: #12122a;
+  }
+  .tab:hover { color: #aabbdd; border-color: #3a4a6a; }
+  .tab.active {
+    color: #ffd700;
+    border-color: #5a4a1a;
+    background: #2a1a0a;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+  }
+  #hud {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 18px;
+    background: #12122a;
+    border-bottom: 1px solid #2a2a4a;
+    font-size: 13px;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+    min-height: 44px;
+  }
+  #hud .turn {
+    display: flex; align-items: center; gap: 8px;
+    color: #8899bb;
+  }
+  #hud .turn-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #222;
+    border: 2px solid #444;
+    transition: all 0.3s;
+  }
+  #hud .turn-dot.black { background: #111; border-color: #555; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+  #hud .turn-dot.white { background: #f5f5f5; border-color: #ccc; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+  #hud .status { color: #66ccff; font-weight: bold; }
+  #hud .captures { color: #ffaa66; font-size: 12px; }
+  #hud .mode {
+    color: #66ccff;
+    cursor: pointer;
+    border: 1px solid #2a3a5a;
+    padding: 4px 12px;
+    border-radius: 5px;
+    transition: all 0.2s;
+    font-size: 12px;
+  }
+  #hud .mode:hover { background: #1a2a4a; }
+  #board-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    min-height: 0;
+  }
+  canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 6px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+    touch-action: none;
+    cursor: pointer;
+  }
+  #controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 18px;
+    background: #12122a;
+    border-top: 1px solid #2a2a4a;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .btn {
+    background: #1a1a3a; color: #66ccff; border: 1px solid #2a3a6a;
+    padding: 8px 20px; border-radius: 6px; font-family: inherit;
+    font-size: 13px; cursor: pointer; letter-spacing: 1.5px;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: #2a2a5a; border-color: #4a5a9a; }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn.primary { color: #ffd700; border-color: #5a4a1a; }
+  .btn.primary:hover { background: #3a2a0a; }
+  .btn.danger { color: #ff6644; border-color: #5a2a1a; }
+  .btn.danger:hover { background: #3a1a0a; }
+  #toast {
+    position: absolute;
+    top: 35%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.94);
+    color: #000;
+    padding: 14px 32px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 10;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+  #toast.show { opacity: 1; }
+  #win-screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,26,0.94);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    gap: 24px;
+  }
+  #win-screen.show { display: flex; }
+  #win-screen h2 {
+    font-size: 30px;
+    color: #ffd700;
+    letter-spacing: 6px;
+    font-weight: 300;
+    text-shadow: 0 0 24px rgba(255, 215, 0, 0.4);
+  }
+  #win-screen p { color: #8899bb; font-size: 14px; letter-spacing: 2px; }
+  #win-screen .btns { display: flex; gap: 14px; margin-top: 10px; }
+  #pass-info {
+    position: absolute;
+    top: 10px; right: 14px;
+    font-size: 12px;
+    color: #667799;
+    letter-spacing: 1px;
+    z-index: 5;
+  }
+  #ai-thinking {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: rgba(10,10,26,0.9);
+    padding: 16px 28px;
+    border-radius: 30px;
+    border: 1px solid #2a3a6a;
+    z-index: 15;
+    font-size: 14px;
+    color: #66ccff;
+    letter-spacing: 2px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.6);
+  }
+  #ai-thinking.show { display: flex; }
+  #ai-thinking .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid #2a3a6a;
+    border-top-color: #66ccff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="top-bar">
+    <div class="tab active" data-game="gomoku">五子棋</div>
+    <div class="tab" data-game="go">围棋</div>
+  </div>
+
+  <div id="hud">
+    <span class="turn">
+      <span class="turn-dot black" id="turn-dot"></span>
+      <span id="turn-text">黑棋回合</span>
+    </span>
+    <span class="captures" id="captures"></span>
+    <span class="status" id="status">对局中</span>
+    <span class="mode" id="mode-btn">人机对战</span>
+  </div>
+
+  <div id="board-wrapper">
+    <canvas id="gameCanvas"></canvas>
+    <div id="pass-info"></div>
+    <div id="ai-thinking">
+      <div class="spinner"></div>
+      <span id="ai-thinking-text">AI 思考中</span>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button class="btn" id="undo-btn" disabled>悔棋</button>
+    <button class="btn" id="pass-btn" style="display:none;">停一手</button>
+    <button class="btn" id="resign-btn" style="display:none;">认输</button>
+    <button class="btn" id="restart-btn">重新开始</button>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="win-screen">
+    <h2 id="win-title">黑棋获胜</h2>
+    <p id="win-sub">五子连珠</p>
+    <div class="btns">
+      <button class="btn primary" id="win-restart">再来一局</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const toastEl = document.getElementById('toast');
+  const winScreen = document.getElementById('win-screen');
+  const turnDot = document.getElementById('turn-dot');
+  const turnText = document.getElementById('turn-text');
+  const statusEl = document.getElementById('status');
+  const capturesEl = document.getElementById('captures');
+  const undoBtn = document.getElementById('undo-btn');
+  const modeBtn = document.getElementById('mode-btn');
+  const passBtn = document.getElementById('pass-btn');
+  const resignBtn = document.getElementById('resign-btn');
+  const passInfo = document.getElementById('pass-info');
+  const aiThinkingEl = document.getElementById('ai-thinking');
+  const aiThinkingText = document.getElementById('ai-thinking-text');
+
+  // ========== 全局 ==========
+  let currentGame = 'gomoku';
+  let W, H;
+  let boardPixelSize = 0;
+  let cellSize = 0;
+  let padding = 0;
+  let stoneRadius = 0;
+
+  const AI_THINK_TIME = 3000;  // AI 思考时间：3 秒
+
+  // ========== 五子棋状态 ==========
+  const GOMOKU_SIZE = 15;
+  let gBoard = [];
+  let gCurrent = 1;
+  let gGameOver = false;
+  let gWinner = 0;
+  let gHistory = [];
+  let gWinLine = [];
+  let gLastMove = null;
+  let gAiMode = true;
+  let gAiThinking = false;
+  let gHover = null;
+  let gAnim = [];
+
+  // ========== 围棋状态 ==========
+  const GO_SIZE = 13;
+  let goBoard = [];
+  let goCurrent = 1;
+  let goGameOver = false;
+  let goWinner = 0;
+  let goHistory = [];
+  let goCaptures = { 1: 0, 2: 0 };
+  let goLastMove = null;
+  let goKoPoint = null;
+  let goAiMode = true;
+  let goAiThinking = false;
+  let goHover = null;
+  let goPassCount = 0;
+  let goAnim = [];
+  const GO_AI_COLOR = 2;
+
+  // ========== 尺寸计算 ==========
+  function resize() {
+    const wrapper = canvas.parentElement;
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const availW = wrapperRect.width - 20;
+    const availH = wrapperRect.height - 20;
+
+    boardPixelSize = Math.min(availW, availH);
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = boardPixelSize * dpr;
+    canvas.height = boardPixelSize * dpr;
+    canvas.style.width = boardPixelSize + 'px';
+    canvas.style.height = boardPixelSize + 'px';
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    W = boardPixelSize;
+    H = boardPixelSize;
+
+    if (currentGame === 'gomoku') {
+      padding = W * 0.06;
+      cellSize = (W - padding * 2) / (GOMOKU_SIZE - 1);
+      stoneRadius = cellSize * 0.42;
+    } else {
+      padding = W * 0.07;
+      cellSize = (W - padding * 2) / (GO_SIZE - 1);
+      stoneRadius = cellSize * 0.44;
+    }
+  }
+  window.addEventListener('resize', resize);
+
+  // ============================================================
+  //  五子棋逻辑
+  // ============================================================
+  function gInit() {
+    gBoard = [];
+    for (let i = 0; i < GOMOKU_SIZE; i++) gBoard.push(new Array(GOMOKU_SIZE).fill(0));
+    gCurrent = 1;
+    gGameOver = false;
+    gWinner = 0;
+    gHistory = [];
+    gWinLine = [];
+    gLastMove = null;
+    gAiThinking = false;
+    gAnim = [];
+    gHover = null;
+    hideAiThinking();
+    updateHUD();
+    updateUndoBtn();
+  }
+
+  function gGridToPixel(gx, gy) {
+    return { x: padding + gx * cellSize, y: padding + gy * cellSize };
+  }
+
+  function gPixelToGrid(px, py) {
+    const gx = Math.round((px - padding) / cellSize);
+    const gy = Math.round((py - padding) / cellSize);
+    if (gx < 0 || gx >= GOMOKU_SIZE || gy < 0 || gy >= GOMOKU_SIZE) return null;
+    const p = gGridToPixel(gx, gy);
+    if (Math.hypot(px - p.x, py - p.y) > cellSize * 0.5) return null;
+    return { x: gx, y: gy };
+  }
+
+  function gPlace(gx, gy, player) {
+    if (gGameOver) return false;
+    if (gx < 0 || gx >= GOMOKU_SIZE || gy < 0 || gy >= GOMOKU_SIZE) return false;
+    if (gBoard[gy][gx] !== 0) return false;
+
+    gBoard[gy][gx] = player;
+    gHistory.push({ x: gx, y: gy, player: player });
+    gLastMove = { x: gx, y: gy };
+    gAnim.push({ x: gx, y: gy, player: player, progress: 0 });
+
+    const line = gCheckWin(gx, gy, player);
+    if (line) {
+      gWinLine = line;
+      gGameOver = true;
+      gWinner = player;
+      showWin(player, "五子连珠");
+      return true;
+    }
+    if (gHistory.length >= GOMOKU_SIZE * GOMOKU_SIZE) {
+      gGameOver = true;
+      gWinner = 0;
+      showWin(0, "棋盘已满");
+      return true;
+    }
+
+    gCurrent = player === 1 ? 2 : 1;
+    updateHUD();
+    updateUndoBtn();
+    return true;
+  }
+
+  function gCheckWin(gx, gy, player) {
+    const dirs = [
+      { dx: 1, dy: 0 }, { dx: 0, dy: 1 },
+      { dx: 1, dy: 1 }, { dx: 1, dy: -1 }
+    ];
+    for (let d of dirs) {
+      const line = [{ x: gx, y: gy }];
+      for (let i = 1; i < 5; i++) {
+        const nx = gx + d.dx * i, ny = gy + d.dy * i;
+        if (nx < 0 || nx >= GOMOKU_SIZE || ny < 0 || ny >= GOMOKU_SIZE) break;
+        if (gBoard[ny][nx] !== player) break;
+        line.push({ x: nx, y: ny });
+      }
+      for (let i = 1; i < 5; i++) {
+        const nx = gx - d.dx * i, ny = gy - d.dy * i;
+        if (nx < 0 || nx >= GOMOKU_SIZE || ny < 0 || ny >= GOMOKU_SIZE) break;
+        if (gBoard[ny][nx] !== player) break;
+        line.push({ x: nx, y: ny });
+      }
+      if (line.length >= 5) return line;
+    }
+    return null;
+  }
+
+  // ---------- 五子棋智能 AI ----------
+  // 策略：
+  //  1. 如果能直接赢，立刻赢
+  //  2. 如果对手下一步能赢，立刻堵
+  //  3. 否则用棋型评分（活四/冲四/活三/眠三/活二）选最优
+  //  4. 加入中心偏好和邻接偏好
+  function gAiMove() {
+    if (gGameOver || gAiThinking) return;
+    gAiThinking = true;
+    showAiThinking("AI 思考中");
+
+    setTimeout(() => {
+      const move = gFindBestMove(2);
+      hideAiThinking();
+      if (move) {
+        gPlace(move.x, move.y, 2);
+      }
+      gAiThinking = false;
+      statusEl.textContent = gGameOver ? "对局结束" : "对局中";
+      updateHUD();
+    }, AI_THINK_TIME);
+  }
+
+  function gFindBestMove(player) {
+    const opponent = player === 1 ? 2 : 1;
+
+    // 空棋盘下中心
+    if (gHistory.length === 0) return { x: 7, y: 7 };
+
+    // 第一步：检查自己能赢
+    for (let y = 0; y < GOMOKU_SIZE; y++) {
+      for (let x = 0; x < GOMOKU_SIZE; x++) {
+        if (gBoard[y][x] !== 0) continue;
+        gBoard[y][x] = player;
+        const win = gCheckWin(x, y, player);
+        gBoard[y][x] = 0;
+        if (win) return { x, y };
+      }
+    }
+
+    // 第二步：检查对手能赢，堵住
+    for (let y = 0; y < GOMOKU_SIZE; y++) {
+      for (let x = 0; x < GOMOKU_SIZE; x++) {
+        if (gBoard[y][x] !== 0) continue;
+        gBoard[y][x] = opponent;
+        const win = gCheckWin(x, y, opponent);
+        gBoard[y][x] = 0;
+        if (win) return { x, y };
+      }
+    }
+
+    // 第三步：棋型评分
+    let bestScore = -Infinity;
+    let bestMove = null;
+    const candidates = gGetCandidates();
+
+    for (let c of candidates) {
+      const attack = gEvalPoint(c.x, c.y, player);
+      const defend = gEvalPoint(c.x, c.y, opponent);
+      // 进攻权重略高于防守
+      const score = attack * 1.1 + defend;
+
+      // 中心偏好
+      const centerDist = Math.abs(c.x - 7) + Math.abs(c.y - 7);
+      const centerBonus = (14 - centerDist) * 2;
+
+      const total = score + centerBonus;
+      if (total > bestScore) {
+        bestScore = total;
+        bestMove = { x: c.x, y: c.y };
+      }
+    }
+
+    return bestMove;
+  }
+
+  function gGetCandidates() {
+    const cand = [];
+    const visited = new Set();
+    for (let y = 0; y < GOMOKU_SIZE; y++) {
+      for (let x = 0; x < GOMOKU_SIZE; x++) {
+        if (gBoard[y][x] !== 0) {
+          for (let dy = -2; dy <= 2; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
+              const nx = x + dx, ny = y + dy;
+              if (nx < 0 || nx >= GOMOKU_SIZE || ny < 0 || ny >= GOMOKU_SIZE) continue;
+              if (gBoard[ny][nx] !== 0) continue;
+              const key = nx + ',' + ny;
+              if (!visited.has(key)) { visited.add(key); cand.push({ x: nx, y: ny }); }
+            }
+          }
+        }
+      }
+    }
+    return cand;
+  }
+
+  // 精细棋型评分
+  function gEvalPoint(gx, gy, player) {
+    const dirs = [
+      { dx: 1, dy: 0 }, { dx: 0, dy: 1 },
+      { dx: 1, dy: 1 }, { dx: 1, dy: -1 }
+    ];
+    let total = 0;
+
+    for (let d of dirs) {
+      // 提取这一方向上的连续棋型
+      const line = [];
+      for (let i = -4; i <= 4; i++) {
+        const nx = gx + d.dx * i;
+        const ny = gy + d.dy * i;
+        if (nx < 0 || nx >= GOMOKU_SIZE || ny < 0 || ny >= GOMOKU_SIZE) {
+          line.push(-1); // 边界
+        } else if (i === 0) {
+          line.push(player); // 假设自己下这里
+        } else {
+          line.push(gBoard[ny][nx]);
+        }
+      }
+      total += gScoreLine(line, player);
+    }
+    return total;
+  }
+
+  // 对一条线上的棋型评分
+  function gScoreLine(line, player) {
+    // line 长度 9，中心是当前假想落子
+    const opponent = player === 1 ? 2 : 1;
+    let score = 0;
+
+    // 检查是否形成五连
+    for (let i = 0; i <= 4; i++) {
+      let count = 0;
+      for (let j = i; j < i + 5; j++) {
+        if (line[j] === player) count++;
+        else if (line[j] === opponent || line[j] === -1) { count = -1; break; }
+      }
+      if (count === 5) return 1000000;
+    }
+
+    // 统计连续长度和两端封堵情况
+    // 中心点就是索引 4
+    let left = 4, right = 4;
+    while (left > 0 && line[left - 1] === player) left--;
+    while (right < 8 && line[right + 1] === player) right++;
+
+    const count = right - left + 1;
+    const leftBlocked = (left === 0 || line[left - 1] === opponent || line[left - 1] === -1);
+    const rightBlocked = (right === 8 || line[right + 1] === opponent || line[right + 1] === -1);
+
+    if (count >= 5) return 1000000;
+    if (count === 4) {
+      if (!leftBlocked && !rightBlocked) return 100000;   // 活四
+      if (!leftBlocked || !rightBlocked) return 10000;    // 冲四
+      return 0;
+    }
+    if (count === 3) {
+      if (!leftBlocked && !rightBlocked) return 8000;     // 活三
+      if (!leftBlocked || !rightBlocked) return 800;      // 眠三
+      return 0;
+    }
+    if (count === 2) {
+      if (!leftBlocked && !rightBlocked) return 500;      // 活二
+      if (!leftBlocked || !rightBlocked) return 50;       // 眠二
+      return 0;
+    }
+    if (count === 1) return 10;
+    return 0;
+  }
+
+  function gUndo() {
+    if (gHistory.length === 0 || gAiThinking) return;
+    if (gGameOver) { gGameOver = false; gWinner = 0; gWinLine = []; winScreen.classList.remove('show'); }
+    const steps = gAiMode ? Math.min(2, gHistory.length) : 1;
+    for (let i = 0; i < steps; i++) {
+      const last = gHistory.pop();
+      if (last) gBoard[last.y][last.x] = 0;
+    }
+    gLastMove = gHistory.length > 0 ? { x: gHistory[gHistory.length-1].x, y: gHistory[gHistory.length-1].y } : null;
+    gCurrent = gHistory.length % 2 === 0 ? 1 : 2;
+    if (gAiMode && gCurrent === 2 && !gGameOver && gHistory.length > 0) {
+      const last = gHistory.pop();
+      gBoard[last.y][last.x] = 0;
+      gCurrent = 1;
+      gLastMove = gHistory.length > 0 ? { x: gHistory[gHistory.length-1].x, y: gHistory[gHistory.length-1].y } : null;
+    }
+    gAnim = [];
+    updateHUD();
+    updateUndoBtn();
+  }
+
+  // ============================================================
+  //  围棋逻辑
+  // ============================================================
+  function goInit() {
+    goBoard = [];
+    for (let i = 0; i < GO_SIZE; i++) goBoard.push(new Array(GO_SIZE).fill(0));
+    goCurrent = 1;
+    goGameOver = false;
+    goWinner = 0;
+    goHistory = [];
+    goCaptures = { 1: 0, 2: 0 };
+    goLastMove = null;
+    goKoPoint = null;
+    goAiThinking = false;
+    goPassCount = 0;
+    goAnim = [];
+    goHover = null;
+    capturesEl.textContent = "";
+    passInfo.textContent = "";
+    hideAiThinking();
+    updateHUD();
+    updateUndoBtn();
+  }
+
+  function goGridToPixel(gx, gy) {
+    return { x: padding + gx * cellSize, y: padding + gy * cellSize };
+  }
+
+  function goPixelToGrid(px, py) {
+    const gx = Math.round((px - padding) / cellSize);
+    const gy = Math.round((py - padding) / cellSize);
+    if (gx < 0 || gx >= GO_SIZE || gy < 0 || gy >= GO_SIZE) return null;
+    const p = goGridToPixel(gx, gy);
+    if (Math.hypot(px - p.x, py - p.y) > cellSize * 0.5) return null;
+    return { x: gx, y: gy };
+  }
+
+  function goGetGroup(gx, gy) {
+    const color = goBoard[gy][gx];
+    if (color === 0) return { stones: [], liberties: 0 };
+    const visited = new Set();
+    const stones = [];
+    const stack = [{ x: gx, y: gy }];
+    const liberties = new Set();
+    while (stack.length > 0) {
+      const { x, y } = stack.pop();
+      const key = x + ',' + y;
+      if (visited.has(key)) continue;
+      visited.add(key);
+      stones.push({ x, y });
+      const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
+      for (let d of dirs) {
+        const nx = x + d.dx, ny = y + d.dy;
+        if (nx < 0 || nx >= GO_SIZE || ny < 0 || ny >= GO_SIZE) continue;
+        if (goBoard[ny][nx] === 0) liberties.add(nx + ',' + ny);
+        else if (goBoard[ny][nx] === color && !visited.has(nx + ',' + ny)) {
+          stack.push({ x: nx, y: ny });
+        }
+      }
+    }
+    return { stones, liberties: liberties.size };
+  }
+
+  function goIsValid(gx, gy, color) {
+    if (gx < 0 || gx >= GO_SIZE || gy < 0 || gy >= GO_SIZE) return false;
+    if (goBoard[gy][gx] !== 0) return false;
+    if (goKoPoint && goKoPoint.x === gx && goKoPoint.y === gy) return false;
+
+    const saved = goBoard.map(row => row.slice());
+    goBoard[gy][gx] = color;
+
+    let captured = false;
+    const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
+    for (let d of dirs) {
+      const nx = gx + d.dx, ny = gy + d.dy;
+      if (nx < 0 || nx >= GO_SIZE || ny < 0 || ny >= GO_SIZE) continue;
+      if (goBoard[ny][nx] !== 0 && goBoard[ny][nx] !== color) {
+        const g = goGetGroup(nx, ny);
+        if (g.liberties === 0) captured = true;
+      }
+    }
+
+    const self = goGetGroup(gx, gy);
+    const hasLiberty = self.liberties > 0;
+
+    for (let y = 0; y < GO_SIZE; y++) goBoard[y] = saved[y];
+
+    return captured || hasLiberty;
+  }
+
+  function goPlace(gx, gy, color) {
+    if (goGameOver) return false;
+    if (!goIsValid(gx, gy, color)) {
+      showToast("禁入点");
+      return false;
+    }
+
+    goHistory.push({
+      board: goBoard.map(row => row.slice()),
+      current: goCurrent,
+      captures: { ...goCaptures },
+      ko: goKoPoint ? { ...goKoPoint } : null,
+      passCount: goPassCount
+    });
+
+    goBoard[gy][gx] = color;
+    goLastMove = { x: gx, y: gy };
+    goAnim.push({ x: gx, y: gy, player: color, progress: 0 });
+
+    let capturedCount = 0;
+    const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
+    const opponent = color === 1 ? 2 : 1;
+    for (let d of dirs) {
+      const nx = gx + d.dx, ny = gy + d.dy;
+      if (nx < 0 || nx >= GO_SIZE || ny < 0 || ny >= GO_SIZE) continue;
+      if (goBoard[ny][nx] === opponent) {
+        const g = goGetGroup(nx, ny);
+        if (g.liberties === 0) {
+          for (let s of g.stones) {
+            goBoard[s.y][s.x] = 0;
+            capturedCount++;
+          }
+        }
+      }
+    }
+
+    goCaptures[color] += capturedCount;
+
+    if (capturedCount === 1) {
+      const self = goGetGroup(gx, gy);
+      if (self.stones.length === 1 && self.liberties === 1) {
+        goKoPoint = { x: gx, y: gy };
+      } else {
+        goKoPoint = null;
+      }
+    } else {
+      goKoPoint = null;
+    }
+
+    let empty = 0;
+    for (let y = 0; y < GO_SIZE; y++)
+      for (let x = 0; x < GO_SIZE; x++)
+        if (goBoard[y][x] === 0) empty++;
+
+    if (empty === 0) {
+      goGameOver = true;
+      goScore();
+      return true;
+    }
+
+    goPassCount = 0;
+    goCurrent = color === 1 ? 2 : 1;
+    updateHUD();
+    updateUndoBtn();
+
+    if (goAiMode && goCurrent === GO_AI_COLOR && !goGameOver) {
+      goAiMove();
+    }
+    return true;
+  }
+
+  function goPass() {
+    if (goGameOver || goAiThinking) return;
+    goHistory.push({
+      board: goBoard.map(row => row.slice()),
+      current: goCurrent,
+      captures: { ...goCaptures },
+      ko: goKoPoint ? { ...goKoPoint } : null,
+      passCount: goPassCount
+    });
+    goPassCount++;
+    goLastMove = null;
+    goKoPoint = null;
+
+    if (goPassCount >= 2) {
+      goGameOver = true;
+      goScore();
+      return;
+    }
+
+    goCurrent = goCurrent === 1 ? 2 : 1;
+    updateHUD();
+    updateUndoBtn();
+    showToast(goCurrent === 1 ? "白棋停一手，黑棋回合" : "黑棋停一手，白棋回合");
+
+    if (goAiMode && goCurrent === GO_AI_COLOR && !goGameOver) {
+      goAiMove();
+    }
+  }
+
+  function goScore() {
+    let blackStones = 0, whiteStones = 0;
+    for (let y = 0; y < GO_SIZE; y++) {
+      for (let x = 0; x < GO_SIZE; x++) {
+        if (goBoard[y][x] === 1) blackStones++;
+        else if (goBoard[y][x] === 2) whiteStones++;
+      }
+    }
+
+    const visited = new Set();
+    let blackTerritory = 0, whiteTerritory = 0;
+    for (let y = 0; y < GO_SIZE; y++) {
+      for (let x = 0; x < GO_SIZE; x++) {
+        if (goBoard[y][x] !== 0) continue;
+        const key = x + ',' + y;
+        if (visited.has(key)) continue;
+        const region = [];
+        const stack = [{ x, y }];
+        let touchesBlack = false, touchesWhite = false;
+        while (stack.length > 0) {
+          const { x: cx, y: cy } = stack.pop();
+          const k = cx + ',' + cy;
+          if (visited.has(k)) continue;
+          visited.add(k);
+          region.push({ x: cx, y: cy });
+          const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
+          for (let d of dirs) {
+            const nx = cx + d.dx, ny = cy + d.dy;
+            if (nx < 0 || nx >= GO_SIZE || ny < 0 || ny >= GO_SIZE) continue;
+            if (goBoard[ny][nx] === 1) touchesBlack = true;
+            else if (goBoard[ny][nx] === 2) touchesWhite = true;
+            else if (!visited.has(nx + ',' + ny)) stack.push({ x: nx, y: ny });
+          }
+        }
+        if (touchesBlack && !touchesWhite) blackTerritory += region.length;
+        else if (touchesWhite && !touchesBlack) whiteTerritory += region.length;
+      }
+    }
+
+    const blackScore = blackStones + blackTerritory;
+    const whiteScore = whiteStones + whiteTerritory;
+
+    if (blackScore > whiteScore) {
+      goWinner = 1;
+      showWin(1, `黑棋 ${blackScore} : ${whiteScore} 白棋`);
+    } else if (whiteScore > blackScore) {
+      goWinner = 2;
+      showWin(2, `白棋 ${whiteScore} : ${blackScore} 黑棋`);
+    } else {
+      goWinner = 0;
+      showWin(0, `平局 ${blackScore} : ${whiteScore}`);
+    }
+  }
+
+  // ---------- 围棋智能 AI ----------
+  // 策略：
+  //  1. 如果能提子，优先提
+  //  2. 如果对手下一步能提子，先逃或堵
+  //  3. 蒙特卡洛随机模拟：对每个候选点，随机走 N 步，评估胜率
+  //  4. 综合棋型评估 + 蒙特卡洛胜率
+  function goAiMove() {
+    if (goGameOver || goAiThinking) return;
+    goAiThinking = true;
+    showAiThinking("AI 推演中");
+
+    setTimeout(() => {
+      const move = goFindBestMove(GO_AI_COLOR);
+      hideAiThinking();
+      if (move) {
+        goPlace(move.x, move.y, GO_AI_COLOR);
+      } else {
+        goPass();
+      }
+      goAiThinking = false;
+      statusEl.textContent = goGameOver ? "对局结束" : "对局中";
+      updateHUD();
+    }, AI_THINK_TIME);
+  }
+
+  function goFindBestMove(color) {
+    const opponent = color === 1 ? 2 : 1;
+
+    // 收集候选点
+    const candidates = [];
+    const visited = new Set();
+    for (let y = 0; y < GO_SIZE; y++) {
+      for (let x = 0; x < GO_SIZE; x++) {
+        if (goBoard[y][x] !== 0) {
+          for (let dy = -2; dy <= 2; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
+              const nx = x + dx, ny = y + dy;
+              if (nx < 0 || nx >= GO_SIZE || ny < 0 || ny >= GO_SIZE) continue;
+              if (goBoard[ny][nx] !== 0) continue;
+              const key = nx + ',' + ny;
+              if (visited.has(key)) continue;
+              if (!goIsValid(nx, ny, color)) continue;
+              visited.add(key);
+              candidates.push({ x: nx, y: ny });
+            }
+          }
+        }
+      }
+    }
+
+    // 空棋盘：下星位
+    if (candidates.length === 0) {
+      const star = Math.floor(GO_SIZE / 2);
+      if (goIsValid(star, star, color)) return { x: star, y: star };
+      return null;
+    }
+
+    // 对每个候选点计算综合评分
+    const scored = candidates.map(c => {
+      const tacticalScore = goTacticalEval(c.x, c.y, color);
+      const mctsScore = goMctsEval(c.x, c.y, color, 30);
+      return {
+        x: c.x, y: c.y,
+        score: tacticalScore * 0.6 + mctsScore * 0.4
+      };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored[0];
+  }
+
+  // 战术评估：提子、气、棋型
+  function goTacticalEval(gx, gy, color) {
+    const opponent = color === 1 ? 2 : 1;
+    const saved = goBoard.map(row => row.slice());
+    goBoard[gy][gx] = color;
+
+    let score = 0;
+    const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
+
+    // 提子
+    let capturedCount = 0;
+    for (let d of dirs) {
+      const nx = gx + d.dx, ny = gy + d.dy;
+      if (nx < 0 || nx >= GO_SIZE || ny < 0 || ny >= GO_SIZE) continue;
+      if (goBoard[ny][nx] === opponent) {
+        const g = goGetGroup(nx, ny);
+        if (g.liberties === 0) capturedCount += g.stones.length;
+      }
+    }
+    score += capturedCount * 150;
+
+    // 自身气
+    const self = goGetGroup(gx, gy);
+    score += self.liberties * 12;
+
+    // 与已有棋子的邻接
+    let neighborCount = 0;
+    for (let d of dirs) {
+      const nx = gx + d.dx, ny = gy + d.dy;
+      if (nx < 0 || nx >= GO_SIZE || ny < 0 || ny >= GO_SIZE) continue;
+      if (goBoard[ny][nx] === color) neighborCount++;
+      if (goBoard[ny][nx] === opponent) neighborCount--;
+    }
+    score += neighborCount * 8;
+
+    // 靠近中心
+    const centerDist = Math.abs(gx - GO_SIZE/2) + Math.abs(gy - GO_SIZE/2);
+    score += (GO_SIZE - centerDist) * 4;
+
+    // 角部/边部加分（围棋角部价值高）
+    const isCorner = (gx < 4 && gy < 4) || (gx > GO_SIZE-5 && gy < 4) ||
+                     (gx < 4 && gy > GO_SIZE-5) || (gx > GO_SIZE-5 && gy > GO_SIZE-5);
+    if (isCorner) score += 20;
+
+    // 恢复
+    for (let y = 0; y < GO_SIZE; y++) goBoard[y] = saved[y];
+
+    return score;
+  }
+
+  // 蒙特卡洛评估：随机模拟 N 次，统计胜率
+  function goMctsEval(gx, gy, color, simulations) {
+    const opponent = color === 1 ? 2 : 1;
+    let wins = 0;
+
+    for (let s = 0; s < simulations; s++) {
+      // 复制棋盘
+      const simBoard = goBoard.map(row => row.slice());
+      // 落子
+      simBoard[gy][gx] = color;
+
+      // 随机走完剩余棋局（简化：随机 30 步）
+      let current = opponent;
+      for (let step = 0; step < 30; step++) {
+        // 收集合法点
+        const empties = [];
+        for (let y = 0; y < GO_SIZE; y++) {
+          for (let x = 0; x < GO_SIZE; x++) {
+            if (simBoard[y][x] === 0) empties.push({ x, y });
+          }
+        }
+        if (empties.length === 0) break;
+
+        // 随机选一个（但避开自己刚下的位置）
+        const pick = empties[Math.floor(Math.random() * empties.length)];
+        if (pick.x === gx && pick.y === gy) continue;
+        simBoard[pick.y][pick.x] = current;
+        current = current === 1 ? 2 : 1;
+      }
+
+      // 简单数子：谁棋子多谁赢
+      let blackCount = 0, whiteCount = 0;
+      for (let y = 0; y < GO_SIZE; y++) {
+        for (let x = 0; x < GO_SIZE; x++) {
+          if (simBoard[y][x] === 1) blackCount++;
+          else if (simBoard[y][x] === 2) whiteCount++;
+        }
+      }
+
+      if (color === 1 && blackCount >= whiteCount) wins++;
+      else if (color === 2 && whiteCount >= blackCount) wins++;
+    }
+
+    return (wins / simulations) * 200;
+  }
+
+  function goUndo() {
+    if (goHistory.length === 0 || goAiThinking) return;
+    if (goGameOver) { goGameOver = false; goWinner = 0; winScreen.classList.remove('show'); }
+
+    const steps = goAiMode ? Math.min(2, goHistory.length) : 1;
+    for (let i = 0; i < steps; i++) {
+      const state = goHistory.pop();
+      if (state) {
+        goBoard = state.board.map(row => row.slice());
+        goCurrent = state.current;
+        goCaptures = { ...state.captures };
+        goKoPoint = state.ko;
+        goPassCount = state.passCount;
+      }
+    }
+    goLastMove = null;
+    goAnim = [];
+    updateHUD();
+    updateUndoBtn();
+  }
+
+  // ============================================================
+  //  渲染
+  // ============================================================
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    if (currentGame === 'gomoku') {
+      renderGomoku();
+    } else {
+      renderGo();
+    }
+    requestAnimationFrame(render);
+  }
+
+  function renderGomoku() {
+    const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+    bgGrad.addColorStop(0, '#e8c88a');
+    bgGrad.addColorStop(0.5, '#dbb878');
+    bgGrad.addColorStop(1, '#c9a566');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = 'rgba(80, 50, 20, 0.6)';
+    ctx.lineWidth = Math.max(1, cellSize * 0.03);
+    for (let i = 0; i < GOMOKU_SIZE; i++) {
+      const p = gGridToPixel(i, 0);
+      ctx.beginPath(); ctx.moveTo(p.x, padding); ctx.lineTo(p.x, H - padding); ctx.stroke();
+      const p2 = gGridToPixel(0, i);
+      ctx.beginPath(); ctx.moveTo(padding, p2.y); ctx.lineTo(W - padding, p2.y); ctx.stroke();
+    }
+
+    ctx.strokeStyle = 'rgba(60, 35, 10, 0.8)';
+    ctx.lineWidth = Math.max(2, cellSize * 0.05);
+    ctx.strokeRect(padding, padding, W - padding * 2, H - padding * 2);
+
+    const stars = [[3,3],[11,3],[3,11],[11,11],[7,7]];
+    ctx.fillStyle = 'rgba(60, 35, 10, 0.8)';
+    for (let s of stars) {
+      const p = gGridToPixel(s[0], s[1]);
+      ctx.beginPath(); ctx.arc(p.x, p.y, cellSize * 0.08, 0, Math.PI * 2); ctx.fill();
+    }
+
+    if (gHover && !gGameOver && !gAiThinking && gBoard[gHover.y][gHover.x] === 0) {
+      const p = gGridToPixel(gHover.x, gHover.y);
+      ctx.fillStyle = gCurrent === 1 ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.3)';
+      ctx.beginPath(); ctx.arc(p.x, p.y, stoneRadius * 0.8, 0, Math.PI * 2); ctx.fill();
+    }
+
+    for (let y = 0; y < GOMOKU_SIZE; y++) {
+      for (let x = 0; x < GOMOKU_SIZE; x++) {
+        if (gBoard[y][x] === 0) continue;
+        drawStone(gGridToPixel(x, y), gBoard[y][x], stoneRadius);
+      }
+    }
+
+    for (let a of gAnim) {
+      if (a.progress < 1) {
+        drawStone(gGridToPixel(a.x, a.y), a.player, stoneRadius * Math.min(1, a.progress + 0.3));
+        a.progress += 0.15;
+      }
+    }
+    gAnim = gAnim.filter(a => a.progress < 1);
+
+    if (gLastMove && gBoard[gLastMove.y][gLastMove.x] !== 0) {
+      const p = gGridToPixel(gLastMove.x, gLastMove.y);
+      ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, stoneRadius * 0.35, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    if (gWinLine.length >= 5) {
+      const first = gGridToPixel(gWinLine[0].x, gWinLine[0].y);
+      const last = gGridToPixel(gWinLine[gWinLine.length-1].x, gWinLine[gWinLine.length-1].y);
+      ctx.strokeStyle = 'rgba(255, 50, 50, 0.8)'; ctx.lineWidth = cellSize * 0.1; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(first.x, first.y); ctx.lineTo(last.x, last.y); ctx.stroke();
+    }
+  }
+
+  function renderGo() {
+    const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+    bgGrad.addColorStop(0, '#e8c88a');
+    bgGrad.addColorStop(0.5, '#dbb878');
+    bgGrad.addColorStop(1, '#c9a566');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = 'rgba(60, 35, 10, 0.7)';
+    ctx.lineWidth = Math.max(1, cellSize * 0.025);
+    for (let i = 0; i < GO_SIZE; i++) {
+      const p = goGridToPixel(i, 0);
+      ctx.beginPath(); ctx.moveTo(p.x, padding); ctx.lineTo(p.x, H - padding); ctx.stroke();
+      const p2 = goGridToPixel(0, i);
+      ctx.beginPath(); ctx.moveTo(padding, p2.y); ctx.lineTo(W - padding, p2.y); ctx.stroke();
+    }
+
+    const starPositions = [[3,3],[9,3],[3,9],[9,9],[6,6]];
+    ctx.fillStyle = 'rgba(40, 20, 5, 0.9)';
+    for (let s of starPositions) {
+      const p = goGridToPixel(s[0], s[1]);
+      ctx.beginPath(); ctx.arc(p.x, p.y, cellSize * 0.09, 0, Math.PI * 2); ctx.fill();
+    }
+
+    if (goHover && !goGameOver && !goAiThinking && goBoard[goHover.y][goHover.x] === 0) {
+      const p = goGridToPixel(goHover.x, goHover.y);
+      const valid = goIsValid(goHover.x, goHover.y, goCurrent);
+      ctx.fillStyle = valid
+        ? (goCurrent === 1 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.35)')
+        : 'rgba(255,0,0,0.2)';
+      ctx.beginPath(); ctx.arc(p.x, p.y, stoneRadius * 0.85, 0, Math.PI * 2); ctx.fill();
+    }
+
+    for (let y = 0; y < GO_SIZE; y++) {
+      for (let x = 0; x < GO_SIZE; x++) {
+        if (goBoard[y][x] === 0) continue;
+        drawStone(goGridToPixel(x, y), goBoard[y][x], stoneRadius);
+      }
+    }
+
+    for (let a of goAnim) {
+      if (a.progress < 1) {
+        drawStone(goGridToPixel(a.x, a.y), a.player, stoneRadius * Math.min(1, a.progress + 0.3));
+        a.progress += 0.15;
+      }
+    }
+    goAnim = goAnim.filter(a => a.progress < 1);
+
+    if (goLastMove && goBoard[goLastMove.y][goLastMove.x] !== 0) {
+      const p = goGridToPixel(goLastMove.x, goLastMove.y);
+      ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, stoneRadius * 0.4, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    if (goKoPoint) {
+      const p = goGridToPixel(goKoPoint.x, goKoPoint.y);
+      ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.arc(p.x, p.y, stoneRadius * 0.6, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function drawStone(pos, player, r) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.beginPath(); ctx.arc(pos.x + 2, pos.y + 3, r, 0, Math.PI * 2); ctx.fill();
+
+    if (player === 1) {
+      const grad = ctx.createRadialGradient(pos.x - r*0.3, pos.y - r*0.3, r*0.1, pos.x, pos.y, r);
+      grad.addColorStop(0, '#666');
+      grad.addColorStop(0.5, '#222');
+      grad.addColorStop(1, '#000');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.beginPath(); ctx.arc(pos.x - r*0.3, pos.y - r*0.3, r*0.25, 0, Math.PI * 2); ctx.fill();
+    } else {
+      const grad = ctx.createRadialGradient(pos.x - r*0.3, pos.y - r*0.3, r*0.1, pos.x, pos.y, r);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.6, '#f0f0f0');
+      grad.addColorStop(1, '#c0c0c0');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(150, 150, 150, 0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath(); ctx.arc(pos.x - r*0.3, pos.y - r*0.3, r*0.2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // ============================================================
+  //  HUD 与通用
+  // ============================================================
+  function updateHUD() {
+    if (currentGame === 'gomoku') {
+      capturesEl.textContent = "";
+      passInfo.textContent = "";
+      if (gGameOver) {
+        turnText.textContent = gWinner === 0 ? "平局" : (gWinner === 1 ? "黑棋获胜" : "白棋获胜");
+        turnDot.className = 'turn-dot ' + (gWinner === 1 ? 'black' : gWinner === 2 ? 'white' : '');
+        statusEl.textContent = "对局结束";
+      } else {
+        turnText.textContent = gCurrent === 1 ? "黑棋回合" : "白棋回合";
+        turnDot.className = 'turn-dot ' + (gCurrent === 1 ? 'black' : 'white');
+        statusEl.textContent = gAiThinking ? "AI 思考中..." : "对局中";
+      }
+    } else {
+      if (goGameOver) {
+        turnText.textContent = goWinner === 0 ? "平局" : (goWinner === 1 ? "黑棋获胜" : "白棋获胜");
+        turnDot.className = 'turn-dot ' + (goWinner === 1 ? 'black' : goWinner === 2 ? 'white' : '');
+        statusEl.textContent = "对局结束";
+      } else {
+        turnText.textContent = goCurrent === 1 ? "黑棋回合" : "白棋回合";
+        turnDot.className = 'turn-dot ' + (goCurrent === 1 ? 'black' : 'white');
+        statusEl.textContent = goAiThinking ? "AI 思考中..." : "对局中";
+      }
+      capturesEl.textContent = `提子 黑${goCaptures[1]} / 白${goCaptures[2]}`;
+      passInfo.textContent = goPassCount > 0 ? `连续停一手 ${goPassCount}/2` : "";
+    }
+  }
+
+  function updateUndoBtn() {
+    if (currentGame === 'gomoku') {
+      undoBtn.disabled = gHistory.length === 0 || gAiThinking;
+    } else {
+      undoBtn.disabled = goHistory.length === 0 || goAiThinking;
+    }
+  }
+
+  function showWin(player, sub) {
+    let title;
+    if (player === 0) title = "平局";
+    else if (player === 1) title = "⚫ 黑棋获胜";
+    else title = "⚪ 白棋获胜";
+    document.getElementById('win-title').textContent = title;
+    document.getElementById('win-sub').textContent = sub || "";
+    winScreen.classList.add('show');
+    updateHUD();
+    updateUndoBtn();
+  }
+
+  function showToast(msg, duration = 1500) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastEl._timeout);
+    toastEl._timeout = setTimeout(() => toastEl.classList.remove('show'), duration);
+  }
+
+  function showAiThinking(text) {
+    aiThinkingText.textContent = text || "AI 思考中";
+    aiThinkingEl.classList.add('show');
+  }
+
+  function hideAiThinking() {
+    aiThinkingEl.classList.remove('show');
+  }
+
+  // ============================================================
+  //  事件处理
+  // ============================================================
+  function handleClick(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const px = (clientX - rect.left) * (W / rect.width);
+    const py = (clientY - rect.top) * (H / rect.height);
+
+    if (currentGame === 'gomoku') {
+      if (gGameOver || gAiThinking) return;
+      if (gAiMode && gCurrent === 2) return;
+      const cell = gPixelToGrid(px, py);
+      if (!cell || gBoard[cell.y][cell.x] !== 0) return;
+      const ok = gPlace(cell.x, cell.y, gCurrent);
+      if (ok && gAiMode && !gGameOver && gCurrent === 2) gAiMove();
+    } else {
+      if (goGameOver || goAiThinking) return;
+      if (goAiMode && goCurrent === GO_AI_COLOR) return;
+      const cell = goPixelToGrid(px, py);
+      if (!cell || goBoard[cell.y][cell.x] !== 0) return;
+      goPlace(cell.x, cell.y, goCurrent);
+    }
+  }
+
+  canvas.addEventListener('click', (e) => handleClick(e.clientX, e.clientY));
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleClick(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (W / rect.width);
+    const py = (e.clientY - rect.top) * (H / rect.height);
+    if (currentGame === 'gomoku') {
+      if (gGameOver || gAiThinking) { gHover = null; return; }
+      const cell = gPixelToGrid(px, py);
+      gHover = (cell && gBoard[cell.y][cell.x] === 0) ? cell : null;
+    } else {
+      if (goGameOver || goAiThinking) { goHover = null; return; }
+      const cell = goPixelToGrid(px, py);
+      goHover = (cell && goBoard[cell.y][cell.x] === 0) ? cell : null;
+    }
+  });
+  canvas.addEventListener('mouseleave', () => { gHover = null; goHover = null; });
+
+  undoBtn.addEventListener('click', () => {
+    if (currentGame === 'gomoku') gUndo();
+    else goUndo();
+  });
+
+  document.getElementById('restart-btn').addEventListener('click', () => {
+    winScreen.classList.remove('show');
+    if (currentGame === 'gomoku') { gInit(); if (gAiMode && gCurrent === 2) gAiMove(); }
+    else { goInit(); if (goAiMode && goCurrent === GO_AI_COLOR) goAiMove(); }
+  });
+
+  document.getElementById('win-restart').addEventListener('click', () => {
+    winScreen.classList.remove('show');
+    if (currentGame === 'gomoku') { gInit(); if (gAiMode && gCurrent === 2) gAiMove(); }
+    else { goInit(); if (goAiMode && goCurrent === GO_AI_COLOR) goAiMove(); }
+  });
+
+  passBtn.addEventListener('click', () => { if (currentGame === 'go') goPass(); });
+
+  resignBtn.addEventListener('click', () => {
+    if (currentGame === 'gomoku') {
+      if (gGameOver) return;
+      gGameOver = true;
+      gWinner = gCurrent === 1 ? 2 : 1;
+      showWin(gWinner, "对方认输");
+    } else {
+      if (goGameOver) return;
+      goGameOver = true;
+      goWinner = goCurrent === 1 ? 2 : 1;
+      showWin(goWinner, "对方认输");
+    }
+  });
+
+  modeBtn.addEventListener('click', () => {
+    if (currentGame === 'gomoku') {
+      gAiMode = !gAiMode;
+      modeBtn.textContent = gAiMode ? '人机对战' : '双人对战';
+      gInit();
+      if (gAiMode && gCurrent === 2) gAiMove();
+    } else {
+      goAiMode = !goAiMode;
+      modeBtn.textContent = goAiMode ? '人机对战' : '双人对战';
+      goInit();
+      if (goAiMode && goCurrent === GO_AI_COLOR) goAiMove();
+    }
+    showToast(modeBtn.textContent);
+  });
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentGame = tab.dataset.game;
+      winScreen.classList.remove('show');
+      hideAiThinking();
+      resize();
+
+      if (currentGame === 'gomoku') {
+        passBtn.style.display = 'none';
+        resignBtn.style.display = 'none';
+        modeBtn.textContent = gAiMode ? '人机对战' : '双人对战';
+        gInit();
+        if (gAiMode && gCurrent === 2) gAiMove();
+      } else {
+        passBtn.style.display = 'inline-block';
+        resignBtn.style.display = 'inline-block';
+        modeBtn.textContent = goAiMode ? '人机对战' : '双人对战';
+        goInit();
+        if (goAiMode && goCurrent === GO_AI_COLOR) goAiMove();
+      }
+    });
+  });
+
+  // ========== 启动 ==========
+  resize();
+  gInit();
+  goInit();
+  render();
+
+})();
+</script>
+</body>
+</html>
