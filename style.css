@@ -1,0 +1,293 @@
+/* ========================================================
+   全局重置与基础变量定义
+   ======================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-green: #1A6840; /* 天府绿 */
+    --accent-red: #C93B37;    /* 蜀锦红 */
+    --gold: #D4AF37;          /* 太阳神鸟金 */
+    --text-main: #222222;
+    --text-light: #666666;
+    --bg-color: #F8F9FA;      /* 极浅灰底色 */
+}
+
+body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+/* ========================================================
+   公共页头 (Header)
+   ======================================================== */
+header {
+    background-color: #ffffff;
+    height: 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 5%;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 26px;
+    font-weight: bold;
+    color: var(--primary-green);
+    letter-spacing: 2px;
+}
+
+/* 纯CSS绘制的太阳神鸟/熊猫剪影风格的Logo */
+.logo-icon {
+    width: 32px;
+    height: 32px;
+    background-color: var(--primary-green);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--gold);
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.logo-area span { color: var(--accent-red); }
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 35px;
+}
+
+nav a {
+    text-decoration: none;
+    color: var(--text-main);
+    font-size: 16px;
+    transition: color 0.3s;
+    padding-bottom: 5px;
+    position: relative;
+}
+
+nav a:hover { color: var(--primary-green); }
+
+nav a.active {
+    color: var(--primary-green);
+    font-weight: bold;
+}
+
+nav a.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 3px;
+    background-color: var(--accent-red);
+    border-radius: 2px;
+}
+
+/* ========================================================
+   首页 - 全屏轮播图 (纯CSS实现)
+   ======================================================== */
+.banner {
+    position: relative;
+    width: 100%;
+    height: 75vh;
+    overflow: hidden;
+    background-color: #000;
+}
+
+.slide {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    animation: bannerAnimate 15s infinite;
+}
+
+/* 使用网络图占位：宽窄巷子/IFS熊猫/九眼桥夜景 */
+.slide:nth-child(1) { background-image: url('imag/1.jpeg'); animation-delay: 0s; }
+.slide:nth-child(2) { background-image: url('imag/2.jpeg'); animation-delay: 5s; }
+.slide:nth-child(3) { background-image: url('imag/3.jpeg'); animation-delay: 10s; }
+.slide:nth-child(4) { background-image: url('imag/4.jpeg'); animation-delay: 15s; }
+.slide:nth-child(5) { background-image: url('imag/5.jpeg'); animation-delay: 20s; }
+
+
+
+@keyframes bannerAnimate {
+    0% { opacity: 0; transform: scale(1); }
+    10% { opacity: 1; }
+    33% { opacity: 1; }
+    43% { opacity: 0; }
+    100% { opacity: 0; transform: scale(1.05); }
+}
+
+.banner-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(26,104,64,0.6) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    text-align: center;
+}
+
+.banner-overlay h1 {
+    font-size: 64px;
+    letter-spacing: 15px;
+    font-weight: 300;
+    margin-bottom: 20px;
+    text-shadow: 2px 4px 10px rgba(0,0,0,0.4);
+}
+
+.banner-overlay p {
+    font-size: 24px;
+    letter-spacing: 8px;
+    color: var(--gold);
+    font-weight: 300;
+}
+
+/* ========================================================
+   通用内容布局与卡片 (适用于美食、景点、熊猫页)
+   ======================================================== */
+.content-section {
+    max-width: 1200px;
+    margin: 80px auto;
+    padding: 0 20px;
+}
+
+.section-title {
+    text-align: center;
+    font-size: 34px;
+    color: var(--primary-green);
+    margin-bottom: 50px;
+    font-weight: 500;
+}
+
+.section-title::after {
+    content: '';
+    display: block;
+    width: 50px; height: 3px;
+    background-color: var(--gold);
+    margin: 15px auto 0;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+}
+
+.item-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    transition: transform 0.3s;
+}
+
+.item-card:hover {
+    transform: translateY(-8px);
+}
+
+.item-img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    transition: transform 0.5s;
+}
+
+.item-card:hover .item-img {
+    transform: scale(1.05); /* 图片轻微放大效果 */
+}
+
+.item-info {
+    padding: 25px;
+}
+
+.item-info h3 {
+    color: var(--primary-green);
+    font-size: 22px;
+    margin-bottom: 12px;
+}
+
+.item-info p {
+    color: var(--text-light);
+    font-size: 15px;
+    line-height: 1.8;
+    text-align: justify;
+}
+
+/* ========================================================
+   首页特有：视频与文字
+   ======================================================== */
+.video-wrapper {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    margin-bottom: 50px;
+    background-color: #000;
+}
+
+.video-wrapper video { width: 100%; display: block; }
+
+.text-card {
+    background-color: #ffffff;
+    padding: 50px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+    border-left: 8px solid var(--primary-green);
+}
+
+.text-card p {
+    color: var(--text-light);
+    font-size: 17px;
+    line-height: 2.2;
+    text-indent: 2em;
+    text-align: justify;
+    margin-bottom: 20px;
+}
+
+/* ========================================================
+   攻略页 - 表格
+   ======================================================== */
+.table-container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+}
+
+table { width: 100%; border-collapse: collapse; text-align: center; }
+table th { background-color: var(--primary-green); color: #fff; padding: 18px; font-size: 18px; }
+table th:first-child { border-top-left-radius: 10px; }
+table th:last-child { border-top-right-radius: 10px; }
+table td { padding: 18px; border-bottom: 1px solid #EEEEEE; color: var(--text-light); }
+table tbody tr:hover { background-color: #F8F9FA; }
+
+/* ========================================================
+   公共页尾 (Footer)
+   ======================================================== */
+footer {
+    background-color: var(--primary-green);
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    padding: 40px 0;
+    margin-top: 80px;
+    font-size: 14px;
+}
+
+footer span { color: var(--gold); font-weight: bold; }

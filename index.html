@@ -2,107 +2,56 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 适配移动端视口 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人名片</title>
-    <!-- CSS样式与HTML结构分离 -->
-    <style>
-        /* 全局重置样式 */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* 页面主体：彩色渐变背景 */
-        body {
-            min-height: 100vh;
-            /* flex布局实现居中 */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            font-family: "Microsoft Yahei", sans-serif;
-        }
-
-        /* 名片卡片容器 */
-        .card {
-            width: 340px;
-            padding: 40px 30px;
-            background-color: #ffffff;
-            /* 12px圆角 */
-            border-radius: 12px;
-            /* 柔和阴影 */
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            /* 过渡动画：用于hover上浮效果 */
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            text-align: center;
-        }
-
-        /* 鼠标悬停：卡片轻微上浮，阴影加深 */
-        .card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-        }
-
-        /* 圆形头像样式 */
-        .avatar {
-            width: 110px;
-            height: 110px;
-            border-radius: 50%;
-            /* 头像占位图，可替换为自己图片地址 */
-            background-image: url("https://picsum.photos/id/1005/110/110");
-            background-size: cover;
-            background-position: center;
-            margin: 0 auto 22px;
-            border: 3px solid #efefef;
-        }
-
-        /* 姓名样式 */
-        .name {
-            font-size: 24px;
-            color: #222222;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        /* 职位信息 */
-        .position {
-            font-size: 16px;
-            color: #666666;
-            margin-bottom: 28px;
-        }
-
-        /* 联系方式容器 */
-        .contact {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        /* 联系单项 */
-        .contact-item {
-            font-size: 15px;
-            color: #342e2e;
-        }
-    </style>
+    <title>蜀韵成都 - 文化旅游宣传</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- 名片卡片主体结构 -->
-    <div class="card">
-        <!-- 圆形头像区域 -->
-        <div class="avatar"></div>
-        <!-- 姓名 -->
-        <h2 class="name">张三</h2>
-        <!-- 职位 -->
-        <p class="position">前端开发工程师</p>
-        <!-- 联系方式区域 -->
-        <div class="contact">
-            <div class="contact-item">📞 电话：138‑0000‑0000</div>
-            <div class="contact-item">📧 邮箱：zhangsan@example.com</div>
-            <div class="contact-item">🌐 个人主页：www.example.com</div>
+    <!-- 页头 -->
+    <header>
+        <div class="logo-area">
+            <div class="logo-icon">蓉</div>
+            <div>蜀韵<span>·</span>成都</div>
         </div>
-    </div>
+        <nav>
+            <ul>
+                <li><a href="index.html" class="active">首页</a></li>
+                <li><a href="panda.html">熊猫</a></li>
+                <li><a href="food.html">美食</a></li>
+                <li><a href="sights.html">景点</a></li>
+                <li><a href="travel.html">攻略</a></li>
+            </ul>
+        </nav>
+    </header>
 
+    <!-- 全屏Banner -->
+    <section class="banner">
+        <div class="slide"></div>
+        <div class="slide"></div>
+        <div class="slide"></div>
+        <div class="banner-overlay">
+            <h1>天府之国</h1>
+            <p>雪山下的公园城市 · 烟火里的幸福成都</p>
+        </div>
+    </section>
+
+    <!-- 视频与介绍 -->
+    <main class="content-section">
+        <h2 class="section-title">蓉城印象</h2>
+        <div class="video-wrapper">
+            <video controls poster="imag/chendu.jpg">
+                <source src="imag/cd1.mp4" type="video/mp4">
+                您的浏览器不支持视频播放。
+            </video>
+        </div>
+        <div class="text-card">
+            <p>成都，一座来了就不想走的城市。这里是古蜀文明的发祥地，三千年的金沙遗址诉说着太阳神鸟的传奇；这里是“天府之国”的核心，都江堰的滔滔江水滋养了千年的富庶与闲适。漫步在宽窄巷子，盖碗茶与采耳声交织出慢生活的烟火气；穿行于春熙路与太古里，现代与传统的碰撞展现着国际化的时尚脉搏。</p>
+            <p>这里不仅有令人垂涎欲滴的麻辣火锅与街头小吃，更有大熊猫繁育研究基地里那群憨态可掬的“外交官”。无论是寻访武侯祠的三国遗风，还是夜游锦江感受水润天府，成都总能以她独有的包容与热情，抚慰每一位旅人的心灵。在快节奏的现代社会中，成都保留了一份难得的从容，让文化、美食与自然在此完美融合，谱写出一曲悠长而迷人的蜀韵之歌。</p>
+        </div>
+    </main>
+
+    <!-- 页尾 -->
+    <footer>
+        <p>© 2024 <span>蜀韵·成都</span> 文化旅游宣传网站. 保留所有权利.</p>
+    </footer>
 </body>
 </html>
